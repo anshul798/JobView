@@ -16,7 +16,9 @@ process.on('uncaughtException', err => {
 });
 
 // Import all routes
-const jobs = require('./routes/jobs')
+const jobs = require('./routes/jobs');
+
+const ErrorHandler = require('./utils/errorHandler');
 
 // Connect to DB
 connect();
