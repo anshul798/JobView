@@ -1,11 +1,20 @@
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const { findByIdAndDelete } = require('../models/jobs');
 const Job = require('../models/jobs');
+const APIFilters = require('../utils/apiFilters');
 const ErrorHandler = require('../utils/errorHandler');
 
 // Get all jobs => /api/v1/jobs
 exports.getJobs = catchAsyncErrors ( async (req, res, next) => {
-    const jobs = await Job.find();
+
+    const apiFilters = new APIFilters(Job.find(), req.query)
+        .filter()
+        .sort()
+        .limitFields()
+        .searchByQuery()
+        .pagination();
+
+    const jobs = await apiFilters.query;
 
     res.status(200).json({
         success: true,
