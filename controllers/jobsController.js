@@ -1,8 +1,10 @@
+const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const { findByIdAndDelete } = require('../models/jobs');
 const Job = require('../models/jobs');
+const ErrorHandler = require('../utils/errorHandler');
 
 // Get all jobs => /api/v1/jobs
-exports.getJobs = async (req, res) => {
+exports.getJobs = catchAsyncErrors ( async (req, res, next) => {
     const jobs = await Job.find();
 
     res.status(200).json({
@@ -10,11 +12,11 @@ exports.getJobs = async (req, res) => {
         results: jobs.length,
         data: jobs
     });
-};
+})
 
 // Get job with id and slug => /api/v1/:id/:slug
 
-exports.getJob = async (req, res) => {
+exports.getJob = catchAsyncErrors ( async (req, res, next) => {
 
     const job = await Job.find({ $and: [{ _id: req.params.id }, { slug: req.params.slug }] });
 
@@ -29,28 +31,25 @@ exports.getJob = async (req, res) => {
         success: true,
         data: job
     });
-}
+})
 
 // Create a new job => /api/v1/jobs
-exports.newJob = async (req, res) => {
+exports.newJob = catchAsyncErrors( async (req, res, next) => {
     const job = await Job.create(req.body);
     res.status(200).json({
         success: true,
         message: 'Job Created Successfully.',
         data: job
     });
-}
+});
 
 // Update a Job => /api/v1/jobs/:id
-exports.updateJob = async (req, res) => {
+exports.updateJob = catchAsyncErrors ( async (req, res, next) => {
     
     let job = await Job.findById(req.params.id);
 
     if(!job){
-        return res.status(404).json({
-            success: false,
-            message: 'Job not found.'
-        });
+        return next(new ErrorHandler('Job not found', 404));
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
@@ -63,10 +62,10 @@ exports.updateJob = async (req, res) => {
         message: 'Job is updated.',
         data: job
     });
-}
+})
 
 // Delete a Job => /api/v1/jobs/:id
-exports.deleteJob = async (req, res) => {
+exports.deleteJob = catchAsyncErrors ( async (req, res, next) => {
 
     let job = await Job.findById(req.params.id);
 
@@ -84,4 +83,4 @@ exports.deleteJob = async (req, res) => {
         message: 'Job is deleted.',
     });
 
-}
+})
