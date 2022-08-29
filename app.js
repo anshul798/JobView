@@ -2,8 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser')
 const app = express();
 const dotenv = require('dotenv');
-const connect = require('./config/db')
-const errorMiddleware = require('./middlewares/errors')
+const cookieParser = require('cookie-parser');
+const connect = require('./config/db');
+const errorMiddleware = require('./middlewares/errors');
 
 // Import env variables
 dotenv.config({path: './config/config.env'});
@@ -17,7 +18,7 @@ process.on('uncaughtException', err => {
 
 // Import all routes
 const jobs = require('./routes/jobs');
-
+const auth = require('./routes/auth')
 const ErrorHandler = require('./utils/errorHandler');
 
 // Connect to DB
@@ -25,7 +26,12 @@ connect();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// Set cookie parser
+app.use(cookieParser());
+
 app.use('/api/v1',jobs);
+app.use('/api/v1', auth)
 
 // Handle unhandled routes
 app.all('*', (req, res, next) => {
