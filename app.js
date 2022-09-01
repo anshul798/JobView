@@ -3,6 +3,7 @@ const bodyParser = require('body-parser')
 const app = express();
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
+const fileUpload = require('express-fileupload');
 const connect = require('./config/db');
 const errorMiddleware = require('./middlewares/errors');
 
@@ -18,7 +19,8 @@ process.on('uncaughtException', err => {
 
 // Import all routes
 const jobs = require('./routes/jobs');
-const auth = require('./routes/auth')
+const auth = require('./routes/auth');
+const user = require('./routes/user');
 const ErrorHandler = require('./utils/errorHandler');
 
 // Connect to DB
@@ -29,9 +31,11 @@ app.use(bodyParser.json());
 
 // Set cookie parser
 app.use(cookieParser());
+app.use(fileUpload());
 
 app.use('/api/v1',jobs);
-app.use('/api/v1', auth)
+app.use('/api/v1', auth);
+app.use('/api/v1', user);
 
 // Handle unhandled routes
 app.all('*', (req, res, next) => {
