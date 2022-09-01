@@ -29,7 +29,10 @@ exports.getJobs = catchAsyncErrors ( async (req, res, next) => {
 
 exports.getJob = catchAsyncErrors ( async (req, res, next) => {
 
-    const job = await Job.find({ $and: [{ _id: req.params.id }, { slug: req.params.slug }] });
+    const job = await Job.find({ $and: [{ _id: req.params.id }, { slug: req.params.slug }] }).populate({
+        path: 'user',
+        select: 'name'
+    });
 
     if(!job || job.length === 0){
         return next(new ErrorHandler('Job not found', 404));
@@ -64,6 +67,11 @@ exports.updateJob = catchAsyncErrors ( async (req, res, next) => {
         return next(new ErrorHandler('Job not found', 404));
     }
 
+    // Check if the user is owner
+    if (job.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(new ErrorHandler(`User(${req.user.id}) is not allowed to update this job.`))
+    }
+
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
         new: true,
         runValidators: true
@@ -77,22 +85,36 @@ exports.updateJob = catchAsyncErrors ( async (req, res, next) => {
 })
 
 // Delete a Job => /api/v1/jobs/:id
-exports.deleteJob = catchAsyncErrors ( async (req, res, next) => {
+exports.deleteJob = catchAsyncErrors(async (req, res, next) => {
+    let job = await Job.findById(req.params.id).select('+applicantsApplied');
 
-    let job = await Job.findById(req.params.id);
-
-    if(!job){
+    if (!job) {
         return next(new ErrorHandler('Job not found', 404));
+    }
+
+    // Check if the user is owner
+    if (job.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(new ErrorHandler(`User(${req.user.id}) is not allowed to delete this job.`))
+    }
+
+    // Deleting files associated with job
+
+    for (let i = 0; i < job.applicantsApplied.length; i++) {
+        let filepath = `${__dirname}/public/uploads/${job.applicantsApplied[i].resume}`.replace('\\controllers', '');
+
+        fs.unlink(filepath, err => {
+            if (err) return console.log(err);
+        });
     }
 
     job = await Job.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
         success: true,
-        message: 'Job is deleted.',
+        message: 'Job is deleted.'
     });
 
-});
+})
 
 // Apply to job using Resume  =>  /api/v1/job/:id/apply
 exports.applyJob = catchAsyncErrors(async (req, res, next) => {
